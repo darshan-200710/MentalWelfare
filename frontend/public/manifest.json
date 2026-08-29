@@ -1,0 +1,25 @@
+{
+  "name": "CRPF Mental Health & Wellbeing",
+  "short_name": "CRPF MHS",
+  "description": "Confidential AI-assisted mental health & wellbeing support for armed forces personnel.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1120",
+  "theme_color": "#1D256F",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

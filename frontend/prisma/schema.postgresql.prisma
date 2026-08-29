@@ -1,0 +1,341 @@
+// Prisma schema for Sentinel Wellbeing Platform
+// SQLite datasource (env-driven). All externally-exposed IDs are cuid/UUIDs.
+// Note: SQLite has no native enums or arrays — roles/levels/statuses are stored
+// as String and validated in the application layer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth & Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String?
+  serviceNumber     String?  // military/personnel identifier (minimized)
+  unit              String?
+  rank              String?
+  role              String   @default("USER") // USER|SUPERVISOR|MENTAL_HEALTH_PROFESSIONAL|ADMIN|SUPER_ADMIN
+  status            String   @default("ACTIVE") // ACTIVE|LOCKED|SUSPENDED|PENDING_VERIFICATION
+  passwordHash      String?
+  passwordResetAt   DateTime?
+  mfaEnabled        Boolean  @default(false)
+  mfaSecret         String?
+  recoveryCodesJson String?
+  emailVerificationToken String?
+  emailVerificationExpires DateTime?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  firstLogin        Boolean  @default(true)
+  onboardingComplete Boolean @default(false)
+  emailVerified     Boolean  @default(false)
+  failedLoginAttempts Int    @default(0)
+  lockedUntil       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastLoginAt       DateTime?
+  lastActiveAt      DateTime?
+
+  // relations
+  sessions          Session[]
+  assessmentSessions AssessmentSession[]
+  journals          DailyJournal[]
+  voiceEntries      VoiceEntry[]
+  conversations     AIConversation[]
+  riskEvents        RiskEvent[]
+  alerts            Alert[]         @relation("AlertUser")
+  alertsAssigned    Alert[]         @relation("AlertAssignee")
+  supportRequests   SupportRequest[] @relation("SupportRequester")
+  supportAssigned    SupportRequest[] @relation("SupportAssignee")
+  consents          ConsentRecord[]
+  auditLogsActor    AuditLog[]      @relation("AuditActor")
+  notifications     Notification[]
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  userAgent   String?
+  ipHash      String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Assessment engine
+// ---------------------------------------------------------------------------
+
+model AssessmentQuestion {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  questionText    String
+  questionType    String   // single_choice | multi_choice | scale | text
+  options         String   // JSON string of options [{value,label,score}]
+  scoringMeta     String   // JSON: {weight, direction}
+  category        String?
+  active          Boolean  @default(true)
+  version         Int      @default(1)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AssessmentSession {
+  id            String   @id @default(cuid())
+  userId        String
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  version       Int      @default(1)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers       AssessmentAnswer[]
+  result        AssessmentResult?
+
+  @@index([userId])
+}
+
+model AssessmentAnswer {
+  id            String   @id @default(cuid())
+  sessionId     String
+  questionId    String
+  questionCode  String
+  value         String   // selected value
+  score         Float    @default(0)
+  createdAt      DateTime @default(now())
+  session       AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model AssessmentResult {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  userId        String
+  totalScore    Float
+  normalizedScore Float   // 0..100 internal indicator
+  wellbeingLevel String  // NORMAL|LOW|MODERATE|ELEVATED|HIGH|CRITICAL
+  signalsJson   String   // JSON array of detected signals
+  notes         String?
+  createdAt      DateTime @default(now())
+  session       AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Journals & Voice
+// ---------------------------------------------------------------------------
+
+model DailyJournal {
+  id            String   @id @default(cuid())
+  userId        String
+  mood          String?  // great|good|okay|low|rough
+  content       String
+  status        String   @default("SUBMITTED") // DRAFT|SUBMITTED
+  analysisJson  String?  // cached AI analysis (wellbeing signals)
+  wellbeingLevel String? // derived
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VoiceEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  audioMime     String
+  audioSize     Int
+  durationSec   Int      @default(0)
+  transcript    String
+  editedTranscript String?
+  analysisJson  String?
+  wellbeingLevel String?
+  createdAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// AI conversations
+// ---------------------------------------------------------------------------
+
+model AIConversation {
+  id            String   @id @default(cuid())
+  userId        String
+  title         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      AIMessage[]
+
+  @@index([userId])
+}
+
+model AIMessage {
+  id            String   @id @default(cuid())
+  conversationId String
+  role          String   // user | assistant | system
+  content       String
+  riskFlag      Boolean  @default(false)
+  metadataJson  String?
+  createdAt      DateTime @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+// ---------------------------------------------------------------------------
+// Risk engine & alerts
+// ---------------------------------------------------------------------------
+
+model RiskEvent {
+  id            String   @id @default(cuid())
+  userId        String
+  level         String   // NORMAL|LOW|MODERATE|ELEVATED|HIGH|CRITICAL
+  source        String   // assessment|journal|voice|ai_chat|manual
+  confidence    Float    @default(0)
+  signalsJson   String   // JSON
+  reason        String?
+  acknowledged  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([level])
+}
+
+model Alert {
+  id            String   @id @default(cuid())
+  userId        String
+  severity      String   // LOW|MODERATE|HIGH|CRITICAL
+  reason        String
+  source        String   // risk_engine|ai_safety|manual|support_request
+  status        String   @default("OPEN") // OPEN|ACKNOWLEDGED|IN_REVIEW|RESOLVED
+  assignedToId  String?
+  resolvedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user          User     @relation("AlertUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignee      User?    @relation("AlertAssignee", fields: [assignedToId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([severity])
+}
+
+// ---------------------------------------------------------------------------
+// Support, consent, notifications
+// ---------------------------------------------------------------------------
+
+model SupportRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // general|counselling|urgent|peer
+  message       String
+  status        String   @default("OPEN") // OPEN|ASSIGNED|RESOLVED
+  assignedToId  String?
+  createdAt      DateTime @default(now())
+  resolvedAt    DateTime?
+  user          User     @relation("SupportRequester", fields: [userId], references: [id], onDelete: Cascade)
+  assignee      User?    @relation("SupportAssignee", fields: [assignedToId], references: [id])
+
+  @@index([userId])
+}
+
+model ConsentRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  purpose       String   // assessment|journal_processing|voice_processing|ai_processing
+  version       String
+  status        String   // GRANTED|WITHDRAWN
+  metadataJson  String?
+  createdAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  title         String
+  body          String?
+  read          Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  action        String   // login|logout|failed_login|assessment_access|journal_access|...
+  targetType    String?  // User|Journal|Conversation|Alert|...
+  targetId      String?
+  ipHash        String?
+  metadataJson  String?
+  createdAt      DateTime @default(now())
+  actor         User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+}
+
+// ---------------------------------------------------------------------------
+// Configurable content (not hardcoded in components)
+// ---------------------------------------------------------------------------
+
+model Resource {
+  id            String   @id @default(cuid())
+  title         String
+  summary       String
+  category      String   // stress|burnout|sleep|relationships|...
+  body          String
+  source        String?
+  durationMin   Int?
+  tags          String?
+  order         Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model EmergencyContact {
+  id            String   @id @default(cuid())
+  label         String
+  description   String
+  contact       String
+  availableHours String?
+  order         Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model MFAToken {
+  id            String   @id @default(cuid())
+  userId        String
+  tokenHash     String   @unique
+  createdAt     DateTime @default(now())
+  used          Boolean  @default(false)
+
+  @@index([userId])
+}

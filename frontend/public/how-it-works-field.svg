@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Layered field lines</title>
+  <desc id="desc">An abstract editorial illustration of measured field lines and a quiet horizon.</desc>
+  <rect width="720" height="520" fill="#d9e0dc"/>
+  <path d="M0 380 180 240 360 320 540 150 720 220V520H0Z" fill="#536b83" opacity=".45"/>
+  <path d="M0 420 180 280 360 360 540 190 720 260" fill="none" stroke="#172638" stroke-width="3" opacity=".7"/>
+  <path d="M0 460 180 320 360 400 540 230 720 300" fill="none" stroke="#b4552d" stroke-width="2" opacity=".8"/>
+  <path d="M0 120H720M0 170H720M0 220H720" stroke="#f6f2e9" stroke-width="1" opacity=".65"/>
+  <circle cx="540" cy="190" r="10" fill="#d8b36a"/>
+  <circle cx="540" cy="190" r="18" fill="none" stroke="#d8b36a" stroke-width="2" opacity=".7"/>
+</svg>

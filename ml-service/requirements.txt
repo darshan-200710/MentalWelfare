@@ -1,0 +1,14 @@
+﻿fastapi==0.115.6
+uvicorn[standard]==0.34.0
+torch>=2.0.0
+transformers>=4.40.0
+sentence-transformers>=3.0.0
+vaderSentiment>=3.3.2
+openai-whisper>=20231117
+edge-tts>=6.1.0
+pygame>=2.5.0
+SpeechRecognition>=3.10.0
+scipy>=1.12.0
+pydantic-settings>=2.0.0
+python-multipart>=0.0.20
+aiofiles>=24.1.0

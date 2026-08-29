@@ -1,0 +1,13 @@
+{
+  "appId": "in.gov.crpf.mentalwelfare",
+  "appName": "CRPF Mental Health Support",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost:3000",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
