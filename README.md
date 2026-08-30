@@ -72,10 +72,10 @@ The ML pipeline is responsible for text analysis and inference. It utilizes:
 
 For demo/hackathon purposes, the platform is compiled into fully standalone binaries:
 * **MentalWelfare.exe**: A self-contained Windows application that bundles the Next.js server, Python ML backend, FFmpeg, and the database connection.
-* **MentalWelfare.apk**: An Android application that connects to the laptop's MentalWelfare.exe server over the local Wi-Fi network.
+
 
 ### Future Scope: 100% Offline Mobile Execution
-Currently, the APK requires the laptop to run the heavy Node.js, PyTorch, and PostgreSQL stack. In the future, we plan to make the mobile app run entirely locally on-device without internet or local servers by:
+Currently, the platform requires a desktop environment to run the heavy Node.js, PyTorch, and PostgreSQL stack.
 1. Converting the Next.js frontend into a static Capacitor Single Page Application (SPA).
 2. Replacing PostgreSQL with an on-device Capacitor SQLite database.
 3. Quantizing the PyTorch LLM and DistilBERT models into **TFLite** or **ONNX** formats to run natively on Android's Neural Processing Unit (NPU) using Java/Kotlin bridges.
