@@ -106,7 +106,7 @@ def start_background_services():
     ml_dir = os.path.join(base_dir, "ml-service")
     if not is_port_open(8001):
         p_ml = subprocess.Popen(
-            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8001"],
+            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"],
             cwd=ml_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -118,7 +118,7 @@ def start_background_services():
     backend_dir = os.path.join(base_dir, "backend")
     if not is_port_open(8000):
         p_backend = subprocess.Popen(
-            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"],
             cwd=backend_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -130,7 +130,7 @@ def start_background_services():
     frontend_dir = os.path.join(base_dir, "frontend")
     if not is_port_open(3000):
         p_frontend = subprocess.Popen(
-            ["npx.cmd" if sys.platform == "win32" else "npx", "next", "dev", "-p", "3000"],
+            ["npx.cmd" if sys.platform == "win32" else "npx", \"next\", \"dev\", \"-H\", \"0.0.0.0\", \"-p\", \"3000\"],
             cwd=frontend_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
