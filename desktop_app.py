@@ -130,7 +130,7 @@ def start_background_services():
     frontend_dir = os.path.join(base_dir, "frontend")
     if not is_port_open(3000):
         p_frontend = subprocess.Popen(
-            ["npx.cmd" if sys.platform == "win32" else "npx", \"next\", \"dev\", \"-H\", \"0.0.0.0\", \"-p\", \"3000\"],
+            ["npx.cmd" if sys.platform == "win32" else "npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"],
             cwd=frontend_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

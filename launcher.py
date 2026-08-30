@@ -177,7 +177,7 @@ def main():
     if not is_port_open(3000):
         print("[*] Starting Next.js Web Application (Port 3000)...")
         p_frontend = subprocess.Popen(
-            ["npx.cmd" if sys.platform == "win32" else "npx", \"next\", \"dev\", \"-H\", \"0.0.0.0\", \"-p\", \"3000\"],
+            ["npx.cmd" if sys.platform == "win32" else "npx", "next", "dev", "-H", "0.0.0.0", "-p", "3000"],
             cwd=frontend_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
