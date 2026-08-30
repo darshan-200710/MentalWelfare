@@ -62,3 +62,6 @@ frontend/android/capacitor-cordova-android-plugins/build/
 
 # Do NOT ignore release binaries since user wants them released/tracked for now (or via LFS)
 # release/
+
+runtime.env
+standalone/
