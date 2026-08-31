@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth";
 import { hasPermission } from "@/lib/constants";
 import { logAudit, AUDIT_ACTIONS } from "@/lib/audit";
 import { jsonError, apiRoute } from "@/lib/api-shared";
+import { decryptChatContent } from "@/lib/crypto";
 import type { WellbeingLevel } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -74,10 +75,10 @@ async function _GET(_req: NextRequest, { params }: { params: Promise<{ id: strin
   // AI conversations — requires VIEW_AI_CONVERSATION (very sensitive)
   let conversations: any[] = [];
   if (hasPermission(user.role, "VIEW_AI_CONVERSATION")) {
-    const convs = await db.aIConversation.findMany({ where: { userId: id }, orderBy: { updatedAt: "desc" }, take: 10, include: { messages: { orderBy: { createdAt: "asc" } } } });
+    const convs = await db.aIConversation.findMany({ where: { userId: id }, orderBy: { updatedAt: "desc" }, take: 3, include: { messages: { orderBy: { createdAt: "asc" } } } });
     conversations = convs.map((c) => ({
       id: c.id, title: c.title, createdAt: c.createdAt.toISOString(),
-      messages: c.messages.map((m) => ({ role: m.role, content: m.content, riskFlag: m.riskFlag, createdAt: m.createdAt.toISOString() })),
+      messages: c.messages.map((m) => ({ role: m.role, content: decryptChatContent(m.content, id), riskFlag: m.riskFlag, createdAt: m.createdAt.toISOString() })),
     }));
     await logAudit({ actorId: user.id, action: AUDIT_ACTIONS.SENSITIVE_ACCESS, targetType: "AIConversation", targetId: id, metadata: { reason: "VIEW_AI_CONVERSATION", count: conversations.length } });
   }
