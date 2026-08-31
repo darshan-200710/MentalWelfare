@@ -6,6 +6,10 @@ import { triggerRiskFromContent } from "@/lib/risk-engine";
 import { logAudit, AUDIT_ACTIONS } from "@/lib/audit";
 import { jsonError, apiRoute } from "@/lib/api-shared";
 import { z } from "zod";
+// Pre-import ZAI SDK at module level to eliminate cold-import latency on fallback
+import ZAI from "z-ai-web-dev-sdk";
+
+const ML_BASE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
 
 export const dynamic = "force-dynamic";
 
@@ -43,15 +47,20 @@ async function _POST(req: NextRequest) {
 
   let transcript = "";
   try {
-    const mlUrl = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
+    const controller = new AbortController();
+    const sttTimeout = setTimeout(() => controller.abort(), 30000); // 30s STT timeout
     const formData = new FormData();
+    // Use the actual MIME suffix in the filename so Whisper gets the right hint
+    const ext = mime.includes("webm") ? "webm" : mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : mime.includes("mp3") ? "mp3" : "wav";
     const audioBlob = new Blob([buf], { type: mime });
-    formData.append("file", audioBlob, "audio.wav");
+    formData.append("file", audioBlob, `audio.${ext}`);
 
-    const mlResp = await fetch(`${mlUrl}/api/ml/voice/transcribe`, {
+    const mlResp = await fetch(`${ML_BASE_URL}/api/ml/voice/transcribe`, {
       method: "POST",
       body: formData,
+      signal: controller.signal,
     });
+    clearTimeout(sttTimeout);
 
     if (mlResp.ok) {
       const data = await mlResp.json();
@@ -62,15 +71,14 @@ async function _POST(req: NextRequest) {
   } catch (mlErr) {
     console.warn("[voice] ML service Whisper STT unavailable, trying fallback:", mlErr);
     try {
-      const ZAI = (await import("z-ai-web-dev-sdk")).default;
+      // ZAI pre-imported at module level — no cold-import latency
       const zai = await ZAI.create();
       const resp = await zai.audio.asr.create({ file_base64: b64 });
       transcript = (resp.text ?? "").trim();
     } catch (e) {
-      console.error("[voice] STT failed, using note prompt:", e);
-      transcript = "Recorded voice entry. Please review or edit your transcript before saving.";
+      console.error("[voice] STT failed:", e);
+      transcript = "";
     }
-
   }
 
 

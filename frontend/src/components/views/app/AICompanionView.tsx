@@ -169,12 +169,28 @@ export default function AICompanionView() {
       setMessages((prev) => prev.map((m) =>
         m.id === pendingAssistant.id ? assistantMsg : m
       ));
+      // Optimistic sidebar update — no extra GET request needed
+      if (!activeConvId) {
+        // New conversation: prepend it to the sidebar list
+        const newConv: Conversation = {
+          id: r.conversationId,
+          title: t.slice(0, 60),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setConversations((prev) => [newConv, ...prev]);
+      } else {
+        // Existing conversation: bump updatedAt timestamp
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === r.conversationId ? { ...c, updatedAt: new Date().toISOString() } : c
+          )
+        );
+      }
       // If the input was provided as voice, auto-play response speech by default
       if (shouldSpeakResponse) {
         speak(assistantMsg);
       }
-      // refresh conversation list sidebar
-      loadConversations();
       if (r.riskFlag) {
         toast.warning("Support options are available below.");
       }
@@ -199,7 +215,9 @@ export default function AICompanionView() {
         if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(c)) { mime = c; break; }
       }
       mimeRef.current = mime || "audio/webm";
-      const rec = new MediaRecorder(stream);
+      // Pass mimeType explicitly so the recorded format matches what we send to the server
+      const recOptions = mime ? { mimeType: mime } : {};
+      const rec = new MediaRecorder(stream, recOptions);
       recorderRef.current = rec;
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };

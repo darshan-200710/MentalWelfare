@@ -2,6 +2,11 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { jsonError, apiRoute } from "@/lib/api-shared";
 import { z } from "zod";
+// Pre-import ZAI SDK at module level to eliminate cold-import latency on fallback
+import ZAI from "z-ai-web-dev-sdk";
+
+const ML_BASE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
+
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +27,15 @@ async function _POST(req: NextRequest) {
   if (!text) return jsonError("Empty text", 400);
 
   try {
-    const mlUrl = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001";
-    const mlResp = await fetch(`${mlUrl}/api/ml/voice/synthesize`, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s TTS timeout
+    const mlResp = await fetch(`${ML_BASE_URL}/api/ml/voice/synthesize`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text.slice(0, 1024) }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (mlResp.ok) {
       const buffer = await mlResp.arrayBuffer();
@@ -41,8 +49,7 @@ async function _POST(req: NextRequest) {
       });
     }
 
-    // Fallback to ZAI if available
-    const ZAI = (await import("z-ai-web-dev-sdk")).default;
+    // Fallback to ZAI (pre-imported at module level)
     const zai = await ZAI.create();
     const response = await zai.audio.tts.create({
       input: text.slice(0, 1024),
@@ -56,7 +63,7 @@ async function _POST(req: NextRequest) {
     return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
-        "Content-Type": "audio/wav",
+        "Content-Type": "audio/mpeg",
         "Content-Length": buffer.length.toString(),
         "Cache-Control": "no-store",
       },

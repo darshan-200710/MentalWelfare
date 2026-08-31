@@ -4,7 +4,11 @@
 a = Analysis(
     ['desktop_app.py'],
     pathex=[],
-    binaries=[('ml-service/ffmpeg.exe', '.'), ('C:/Program Files/nodejs/node.exe', '.')],
+    binaries=[
+        ('ml-service/ffmpeg.exe', '.'),              # root of _MEIPASS — found by launcher.py
+        ('ml-service/ffmpeg.exe', 'ml-service'),     # ml-service/ subdir — found by voice_handler.py fallback
+        ('C:/Program Files/nodejs/node.exe', '.'),
+    ],
     datas=[('ml-service/outputs', 'ml-service/outputs'), ('ml-service/rag_db.json', '.'), ('logo.png', '.'), ('logo.ico', '.'), ('runtime.env', '.'), ('standalone', 'standalone')],
     hiddenimports=[],
     hookspath=[],

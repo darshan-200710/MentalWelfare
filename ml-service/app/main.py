@@ -1,6 +1,6 @@
-﻿import logging
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Response
+from fastapi import FastAPI, HTTPException, UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
@@ -14,12 +14,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-load models asynchronously
+    # Pre-load models asynchronously at startup so the first request isn't slow
     import asyncio
     loop = asyncio.get_event_loop()
     loop.run_in_executor(None, pipeline_wrapper.load_models)
     yield
-    # Cleanup code here if necessary
 
 app = FastAPI(title="MentalWelfare ML Service", lifespan=lifespan)
 
@@ -35,6 +34,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    system_context: Optional[str] = None  # enriched user/assessment context from Next.js
 
 class ChatResponse(BaseModel):
     response: str
@@ -60,7 +60,11 @@ class VoiceSynthesizeRequest(BaseModel):
 @app.post("/api/ml/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
-        result = await pipeline_wrapper.process(request.message, request.session_id)
+        result = await pipeline_wrapper.process(
+            request.message,
+            request.session_id,
+            system_context=request.system_context or "",
+        )
         return ChatResponse(**result)
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
@@ -79,16 +83,19 @@ async def analyze_journal_endpoint(request: AnalyzeRequest):
 async def transcribe_endpoint(file: UploadFile = File(...)):
     try:
         audio_bytes = await file.read()
-        transcript = await voice_handler.transcribe(audio_bytes, file.content_type or "audio/wav")
-        # Analyze transcript
-        analysis = await pipeline_wrapper.analyze_text(transcript)
+        mime_type = file.content_type or "audio/wav"
+        transcript = await voice_handler.transcribe(audio_bytes, mime_type)
+        # Analyze mood — uses lightweight analyze_intent, not full LLM generation
+        analysis = await pipeline_wrapper.analyze_text(transcript) if transcript else {
+            "morale_score": 50, "mood": "triage", "requires_human_review": False
+        }
         return {
             "transcript": transcript,
             "analysis": {
                 "morale_score": analysis["morale_score"],
                 "mood": analysis["mood"],
-                "is_emergency": analysis["requires_human_review"]
-            }
+                "is_emergency": analysis["requires_human_review"],
+            },
         }
     except Exception as e:
         logger.error(f"Error in transcribe endpoint: {e}")
@@ -101,11 +108,10 @@ async def synthesize_endpoint(request: VoiceSynthesizeRequest):
         return Response(content=audio_bytes, media_type="audio/mpeg")
     except Exception as e:
         logger.error(f"Error in synthesize endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail="TTS unavailable")
 
 @app.get("/api/ml/health")
 async def health_check():
     health = pipeline_wrapper.health_check()
-    # Add whisper health (it loads lazily, so we just return if it's initialized)
-    health["models"]["whisper"] = voice_handler._whisper_model is not None
+    health["models"]["whisper"] = voice_handler._whisper_pipeline is not None
     return health
