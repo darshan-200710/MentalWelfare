@@ -81,7 +81,7 @@ class PipelineWrapper:
             return "DECLINING"
         return "STABLE"
 
-    async def process(self, text: str, session_id: str, system_context: str = "") -> dict:
+    async def process(self, text: str, session_id: str, system_context: str = "", history: list = None) -> dict:
         """Run the pipeline asynchronously in a thread pool."""
         if not self._loaded:
             loop = asyncio.get_event_loop()
@@ -101,7 +101,7 @@ class PipelineWrapper:
             # Use _PIPELINE_DIR resolved at import time — no os.chdir() race
             # The pipeline was already warm-started from _PIPELINE_DIR
             return self._pipeline_module.run_pipeline(
-                enriched_text, trajectory_trend=trajectory, print_logs=False
+                enriched_text, trajectory_trend=trajectory, print_logs=False, history=history
             )
 
         try:

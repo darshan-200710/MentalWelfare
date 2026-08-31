@@ -35,6 +35,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str
     system_context: Optional[str] = None  # enriched user/assessment context from Next.js
+    history: Optional[List[Dict[str, str]]] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -64,6 +65,7 @@ async def chat_endpoint(request: ChatRequest):
             request.message,
             request.session_id,
             system_context=request.system_context or "",
+            history=request.history or []
         )
         return ChatResponse(**result)
     except Exception as e:

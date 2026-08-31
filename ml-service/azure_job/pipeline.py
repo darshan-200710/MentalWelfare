@@ -118,7 +118,7 @@ def analyze_intent(text):
     else:
         return "triage", morale_score
 
-def run_pipeline(user_input, trajectory_trend="INITIALIZING...", print_logs=False):
+def run_pipeline(user_input, trajectory_trend="INITIALIZING...", print_logs=False, history=None):
     mood, morale_score = analyze_intent(user_input)
     is_emergency = (mood == "emergency") or regex_safety_net(user_input)
     
@@ -178,10 +178,19 @@ Emergency Triggered: {is_emergency}{rag_context}
 [User Message]
 {user_input}"""
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": enriched_user_input}
-    ]
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    if history:
+        for i, msg in enumerate(history):
+            if i == len(history) - 1 and msg.get("role") == "user":
+                messages.append({"role": "user", "content": enriched_user_input})
+            else:
+                content = msg.get("content", "")
+                if len(content) > 300:
+                    content = content[:300] + "..."
+                messages.append({"role": msg.get("role", "user"), "content": content})
+    else:
+        messages.append({"role": "user", "content": enriched_user_input})
     
     if llm_tokenizer is not None and llm_model is not None:
         text = llm_tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
