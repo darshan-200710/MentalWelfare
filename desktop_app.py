@@ -224,19 +224,33 @@ def main():
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         setup_embedded_environment()
+        
         if sys.argv[1] == "--run-ml-service":
-            res_dir = get_resource_dir()
-            sys.path.insert(0, os.path.join(res_dir, "ml-service"))
-            os.chdir(os.path.join(res_dir, "ml-service"))
-            import uvicorn
-            uvicorn.run("app.main:app", host="0.0.0.0", port=8001, log_level="warning")
+            try:
+                res_dir = get_resource_dir()
+                sys.path.insert(0, os.path.join(res_dir, "ml-service"))
+                os.chdir(os.path.join(res_dir, "ml-service"))
+                import uvicorn
+                from app.main import app as ml_app
+                uvicorn.run(ml_app, host="0.0.0.0", port=8001, log_level="warning")
+            except Exception as e:
+                import traceback
+                with open(os.path.join(get_base_dir(), "ml_crash.log"), "w") as f:
+                    f.write(traceback.format_exc())
             sys.exit(0)
+            
         elif sys.argv[1] == "--run-backend":
-            res_dir = get_resource_dir()
-            sys.path.insert(0, os.path.join(res_dir, "backend"))
-            os.chdir(os.path.join(res_dir, "backend"))
-            import uvicorn
-            uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="warning")
+            try:
+                res_dir = get_resource_dir()
+                sys.path.insert(0, os.path.join(res_dir, "backend"))
+                os.chdir(os.path.join(res_dir, "backend"))
+                import uvicorn
+                from app.main import app as backend_app
+                uvicorn.run(backend_app, host="0.0.0.0", port=8000, log_level="warning")
+            except Exception as e:
+                import traceback
+                with open(os.path.join(get_base_dir(), "backend_crash.log"), "w") as f:
+                    f.write(traceback.format_exc())
             sys.exit(0)
             
     main()

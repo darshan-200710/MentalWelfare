@@ -81,7 +81,7 @@ class PipelineWrapper:
             return "DECLINING"
         return "STABLE"
 
-    async def process(self, text: str, session_id: str, system_context: str = "", history: list = None) -> dict:
+    async def process(self, history: list, session_id: str, system_context: str = "") -> dict:
         """Run the pipeline asynchronously in a thread pool."""
         if not self._loaded:
             loop = asyncio.get_event_loop()
@@ -90,10 +90,13 @@ class PipelineWrapper:
         trajectory = self.get_session_trajectory(session_id)
 
         # Build enriched input: prepend system_context as a hidden preamble
-        # so the 135M model can use profile/assessment data for context
-        enriched_text = text
+        enriched_text = ""
         if system_context:
-            enriched_text = f"[System Context]\n{system_context}\n\n[User Message]\n{text}"
+            enriched_text += f"[System Context]\n{system_context}\n\n"
+            
+        for turn in history:
+            role = "User" if turn.get("role") == "user" else "AI Companion"
+            enriched_text += f"[{role}]\n{turn.get('content')}\n\n"
 
         loop = asyncio.get_event_loop()
 
@@ -101,7 +104,7 @@ class PipelineWrapper:
             # Use _PIPELINE_DIR resolved at import time — no os.chdir() race
             # The pipeline was already warm-started from _PIPELINE_DIR
             return self._pipeline_module.run_pipeline(
-                enriched_text, trajectory_trend=trajectory, print_logs=False, history=history
+                enriched_text, trajectory_trend=trajectory, print_logs=False
             )
 
         try:
