@@ -151,22 +151,18 @@ def start_background_services():
     python_exe = sys.executable if not getattr(sys, "frozen", False) else "py"
 
     # 1. Start ML Microservice on Port 8001
-    ml_dir = os.path.join(base_dir, "ml-service")
-    if not is_port_open(8001) and os.path.isdir(ml_dir):
+    if not is_port_open(8001):
         p_ml = subprocess.Popen(
-            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"],
-            cwd=ml_dir,
+            [sys.executable, "--run-ml-service"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         )
         processes.append(p_ml)
 
     # 2. Start FastAPI Backend Gateway on Port 8000
-    backend_dir = os.path.join(base_dir, "backend")
-    if not is_port_open(8000) and os.path.isdir(backend_dir):
+    if not is_port_open(8000):
         p_backend = subprocess.Popen(
-            [python_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"],
-            cwd=backend_dir,
+            [sys.executable, "--run-backend"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         )
@@ -226,4 +222,21 @@ def main():
         cleanup()
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        setup_embedded_environment()
+        if sys.argv[1] == "--run-ml-service":
+            res_dir = get_resource_dir()
+            sys.path.insert(0, os.path.join(res_dir, "ml-service"))
+            os.chdir(os.path.join(res_dir, "ml-service"))
+            import uvicorn
+            uvicorn.run("app.main:app", host="0.0.0.0", port=8001, log_level="warning")
+            sys.exit(0)
+        elif sys.argv[1] == "--run-backend":
+            res_dir = get_resource_dir()
+            sys.path.insert(0, os.path.join(res_dir, "backend"))
+            os.chdir(os.path.join(res_dir, "backend"))
+            import uvicorn
+            uvicorn.run("app.main:app", host="0.0.0.0", port=8000, log_level="warning")
+            sys.exit(0)
+            
     main()

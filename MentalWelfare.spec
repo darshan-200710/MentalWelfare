@@ -9,8 +9,17 @@ a = Analysis(
         ('ml-service/ffmpeg.exe', 'ml-service'),     # ml-service/ subdir — found by voice_handler.py fallback
         ('C:/Program Files/nodejs/node.exe', '.'),
     ],
-    datas=[('ml-service/outputs', 'ml-service/outputs'), ('ml-service/rag_db.json', '.'), ('logo.png', '.'), ('logo.ico', '.'), ('runtime.env', '.'), ('standalone', 'standalone')],
-    hiddenimports=[],
+    datas=[
+        ('ml-service/app', 'ml-service/app'),
+        ('ml-service/azure_job', 'ml-service/azure_job'),
+        ('ml-service/mental_health_skill', 'ml-service/mental_health_skill'),
+        ('backend/app', 'backend/app'),
+        ('ml-service/outputs', 'ml-service/outputs'),
+        ('ml-service/rag_db.json', '.'),
+        ('logo.png', '.'), ('logo.ico', '.'),
+        ('runtime.env', '.'), ('standalone', 'standalone')
+    ],
+    hiddenimports=['uvicorn', 'fastapi', 'pydantic', 'transformers', 'edge_tts', 'speech_recognition'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
