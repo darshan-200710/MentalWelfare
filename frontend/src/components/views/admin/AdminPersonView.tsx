@@ -388,7 +388,7 @@ export default function AdminPersonView() {
                           <Badge variant="outline" className="ring-1 ring-border">{j.status}</Badge>
                           <span className="ml-auto text-xs text-muted-foreground tabular-nums">{fmtDateTime(j.createdAt)}</span>
                         </div>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{j.content}</p>
+                        <p className="mt-2 whitespace-pre-wrap break-words break-all text-sm text-foreground">{j.content}</p>
                       </li>
                     ))}
                   </ul>
@@ -425,7 +425,7 @@ export default function AdminPersonView() {
                           {v.wellbeingLevel && <LevelPill level={v.wellbeingLevel} />}
                           <span className="ml-auto text-xs text-muted-foreground tabular-nums">{fmtDateTime(v.createdAt)}</span>
                         </div>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{v.transcript}</p>
+                        <p className="mt-2 whitespace-pre-wrap break-words break-all text-sm text-foreground">{v.transcript}</p>
                       </li>
                     ))}
                   </ul>
@@ -463,7 +463,7 @@ export default function AdminPersonView() {
                               <span className={`mt-0.5 inline-flex h-5 w-16 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase tracking-wide ${m.role === "user" ? "bg-primary/10 text-primary" : m.role === "assistant" ? "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" : "bg-muted text-muted-foreground"}`}>
                                 {m.role}
                               </span>
-                              <p className="flex-1 whitespace-pre-wrap text-foreground">{m.content}</p>
+                              <p className="flex-1 whitespace-pre-wrap break-words break-all text-foreground">{m.content}</p>
                               {m.riskFlag && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/30">
                                   <TriangleAlert className="h-3 w-3" /> Risk
