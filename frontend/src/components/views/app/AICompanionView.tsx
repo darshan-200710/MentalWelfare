@@ -77,15 +77,15 @@ export default function AICompanionView() {
     try {
       const r = await api.get<{ conversations: Conversation[] }>("/api/ai/conversations");
       setConversations(r.conversations);
-      if (autoSelect && r.conversations.length > 0 && !activeConvId) {
-        setActiveConvId(r.conversations[0].id);
+      if (autoSelect && r.conversations.length > 0) {
+        setActiveConvId((prev) => prev ? prev : r.conversations[0].id);
       }
     } catch {
       /* ignore */
     } finally {
       setLoadingConv(false);
     }
-  }, [activeConvId]);
+  }, []);
 
   useEffect(() => {
     const id = window.setTimeout(() => { void loadConversations(true); }, 0);

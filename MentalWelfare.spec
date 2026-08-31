@@ -4,8 +4,8 @@
 a = Analysis(
     ['desktop_app.py'],
     pathex=[],
-    binaries=[('ml-service/ffmpeg.exe', '.')],
-    datas=[('ml-service/outputs', 'ml-service/outputs'), ('ml-service/rag_db.json', '.'), ('logo.png', '.'), ('logo.ico', '.')],
+    binaries=[('ml-service/ffmpeg.exe', '.'), ('C:/Program Files/nodejs/node.exe', '.')],
+    datas=[('ml-service/outputs', 'ml-service/outputs'), ('ml-service/rag_db.json', '.'), ('logo.png', '.'), ('logo.ico', '.'), ('runtime.env', '.'), ('standalone', 'standalone')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
