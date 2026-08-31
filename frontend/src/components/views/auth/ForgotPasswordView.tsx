@@ -50,7 +50,7 @@ export default function ForgotPasswordView() {
     setSubmitting(false);
     setEmail(values.email);
     setSent(true);
-    toast.success("Reset request received");
+    console.log("Reset request received");
   }
 
   const backButton = (

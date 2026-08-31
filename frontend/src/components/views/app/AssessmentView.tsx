@@ -83,7 +83,7 @@ export default function AssessmentView() {
         if (me?.user) useApp.getState().setUser(me.user);
       } catch { /* ignore */ }
       setStage("done");
-      toast.success("Check-in recorded");
+      console.log("Check-in recorded");
     } catch (e) {
       const msg = e instanceof ApiRequestError ? e.message : "Something went wrong submitting your check-in.";
       toast.error(msg);

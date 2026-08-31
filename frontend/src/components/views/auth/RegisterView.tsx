@@ -67,7 +67,7 @@ export default function RegisterView() {
         rank: values.rank || undefined,
       });
       setUser(user);
-      toast.success("Account created. Let's get you set up.");
+      console.log("Account created. Let's get you set up.");
       navigate("assessment");
     } catch (err) {
       if (err instanceof ApiRequestError) {

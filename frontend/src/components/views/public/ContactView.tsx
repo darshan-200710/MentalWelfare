@@ -51,7 +51,7 @@ export default function ContactView() {
   const onSubmit = async (values: FormValues) => {
     // No email backend is wired in this build; simulate a successful submission.
     await new Promise((r) => setTimeout(r, 600));
-    toast.success("Message received", {
+    console.log("Message received", {
       description: "Thank you for reaching out. We'll respond via email if needed.",
     });
     setSubmitted(true);

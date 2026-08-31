@@ -49,7 +49,7 @@ export default function AdminSettingsView() {
     setDialogOpen(false);
     try {
       const r = await api.post<{ users?: number; message?: string; [k: string]: unknown }>("/api/seed?force=1");
-      toast.success("Seed data regenerated", {
+      console.log("Seed data regenerated", {
         description: r && typeof r === "object"
           ? `${(r as any).users ?? "?"} users · ${(r as any).alerts ?? "?"} alerts`
           : "Database re-seeded.",

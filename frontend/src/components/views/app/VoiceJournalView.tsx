@@ -148,7 +148,7 @@ export default function VoiceJournalView() {
       setTranscript(r.transcript || "");
       setVoiceId(r.id);
       setPhase("review");
-      toast.success("Transcript ready — please review.");
+      console.log("Transcript ready — please review.");
     } catch (e) {
       setErrorMsg(e instanceof ApiRequestError ? e.message : "Transcription failed. Please try again.");
       setPhase("idle");
@@ -163,7 +163,7 @@ export default function VoiceJournalView() {
     setSubmitting(true);
     try {
       await api.post("/api/journals", { mood: null, content: transcript.trim(), status: "SUBMITTED" });
-      toast.success("Voice journal saved.");
+      console.log("Voice journal saved.");
       setPhase("idle");
       setTranscript("");
       setVoiceId(null);

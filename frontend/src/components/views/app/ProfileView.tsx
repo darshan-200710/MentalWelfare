@@ -82,7 +82,7 @@ export default function ProfileView() {
     setBusyPurpose(pendingChange.purpose);
     try {
       await api.post("/api/consent", { purpose: pendingChange.purpose, status: pendingChange.status });
-      toast.success(pendingChange.status === "GRANTED" ? "Consent granted." : "Consent withdrawn.");
+      console.log(pendingChange.status === "GRANTED" ? "Consent granted." : "Consent withdrawn.");
       await loadConsents();
     } catch (e) {
       toast.error(e instanceof ApiRequestError ? e.message : "Failed to update consent.");

@@ -30,7 +30,7 @@ export default function VerifyEmailView() {
     // any 6-digit code.
     await new Promise((r) => setTimeout(r, 700));
     setVerifying(false);
-    toast.success("Email verified", {
+    console.log("Email verified", {
       description: "Your account is ready.",
     });
     if (user && !user.onboardingComplete) navigate("assessment");
@@ -39,7 +39,7 @@ export default function VerifyEmailView() {
   }
 
   function resend() {
-    toast.success("New code sent", { description: "Check your inbox." });
+    console.log("New code sent", { description: "Check your inbox." });
   }
 
   return (

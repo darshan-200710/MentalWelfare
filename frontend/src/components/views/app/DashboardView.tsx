@@ -158,7 +158,7 @@ export default function DashboardView() {
     setSaving(status === "DRAFT" ? "draft" : "submit");
     try {
       await api.post("/api/journals", { mood: draftMood, content: draftText.trim(), status });
-      toast.success(status === "DRAFT" ? "Draft saved." : "Entry recorded — thank you.");
+      console.log(status === "DRAFT" ? "Draft saved." : "Entry recorded — thank you.");
       setDraftText(""); setDraftMood(null);
       await load();
     } catch (e) {

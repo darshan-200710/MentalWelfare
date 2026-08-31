@@ -48,7 +48,7 @@ export default function ResetPasswordView() {
     setSubmitting(true);
     try {
       await api.post("/api/auth/reset-password", { token, newPassword: _values.password });
-      toast.success("Password updated", {
+      console.log("Password updated", {
         description: "You can now sign in with your new password.",
       });
       navigate("login");

@@ -195,7 +195,7 @@ def main():
     # 5. Open Web Browser
     app_url = "http://localhost:3000"
     print(f"\n======================================================================")
-    print(f"  ✨ PLATFORM ONLINE! Opening web portal in your browser...")
+    print(f"  [+] PLATFORM ONLINE! Opening web portal in your browser...")
     print(f"  🔗 URL: {app_url}")
     print(f"  🛡️ Admin Console: {app_url}/admin")
     print(f"  Press Ctrl+C in this window at any time to stop the server.")

@@ -57,7 +57,7 @@ export default function LoginView() {
       });
       setUser(user);
       const firstName = user.name?.split(" ")[0];
-      toast.success(firstName ? `Welcome back, ${firstName}.` : "Welcome back.");
+      console.log(firstName ? `Welcome back, ${firstName}.` : "Welcome back.");
       if (["ADMIN", "SUPER_ADMIN", "MENTAL_HEALTH_PROFESSIONAL", "SUPERVISOR"].includes(user.role)) {
         navigate("admin-personnel");
       } else if (!user.onboardingComplete) {

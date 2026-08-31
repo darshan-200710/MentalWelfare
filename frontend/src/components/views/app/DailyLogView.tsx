@@ -139,7 +139,7 @@ export default function DailyLogView() {
       });
       setJournals((prev) => [r.journal, ...prev]);
       setDraftText(""); setDraftMood(null);
-      toast.success(status === "DRAFT" ? "Draft saved." : "Entry recorded — thank you for reflecting.");
+      console.log(status === "DRAFT" ? "Draft saved." : "Entry recorded — thank you for reflecting.");
     } catch (e) {
       toast.error(e instanceof ApiRequestError ? e.message : "Failed to save entry.");
     } finally {
@@ -160,7 +160,7 @@ export default function DailyLogView() {
         mood: editMood, content: editText.trim(), status,
       });
       setJournals((prev) => prev.map((j) => (j.id === r.journal.id ? r.journal : j)));
-      toast.success(status === "DRAFT" ? "Draft updated." : "Entry updated.");
+      console.log(status === "DRAFT" ? "Draft updated." : "Entry updated.");
       setEditing(null);
     } catch (e) {
       toast.error(e instanceof ApiRequestError ? e.message : "Failed to update entry.");
@@ -175,7 +175,7 @@ export default function DailyLogView() {
     try {
       await api.del(`/api/journals/${deletingId}`);
       setJournals((prev) => prev.filter((j) => j.id !== deletingId));
-      toast.success("Entry deleted.");
+      console.log("Entry deleted.");
       setDeletingId(null);
     } catch (e) {
       toast.error(e instanceof ApiRequestError ? e.message : "Failed to delete entry.");

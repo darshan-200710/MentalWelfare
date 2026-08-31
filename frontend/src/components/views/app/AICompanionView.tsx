@@ -240,7 +240,7 @@ export default function AICompanionView() {
       if (r.transcript) {
         setInput(r.transcript);
         setWasVoiceInput(true);
-        toast.success("Voice message transcribed — send to receive spoken response.");
+        console.log("Voice message transcribed — send to receive spoken response.");
       } else {
         toast.error("Transcription returned empty. Please type instead.");
       }

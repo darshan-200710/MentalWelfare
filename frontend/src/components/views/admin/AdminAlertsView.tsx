@@ -85,7 +85,7 @@ export default function AdminAlertsView() {
     setActingId(id);
     try {
       await api.put(`/api/admin/alerts/${id}`, body);
-      toast.success("Alert updated", {
+      console.log("Alert updated", {
         description: body.status ? `Status set to ${body.status.replace(/_/g, " ").toLowerCase()}.`
           : "Alert assigned to you.",
       });

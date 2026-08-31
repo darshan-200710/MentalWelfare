@@ -103,7 +103,7 @@ export default function SettingsView() {
 
   function saveNotifications() {
     try { localStorage.setItem(NOTIF_STORAGE, JSON.stringify(notifications)); } catch { /* ignore */ }
-    toast.success("Notification preferences saved.");
+    console.log("Notification preferences saved.");
   }
 
   return (
@@ -223,7 +223,7 @@ export default function SettingsView() {
               <p className="text-sm font-medium">Two-Factor Authentication (MFA)</p>
               <p className="text-xs text-muted-foreground">Add an extra layer of security to your account.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => toast.success("MFA setup initiated")}>Enable MFA</Button>
+            <Button variant="outline" size="sm" onClick={() => console.log("MFA setup initiated")}>Enable MFA</Button>
           </div>
           <Separator />
           <div>
@@ -241,7 +241,7 @@ export default function SettingsView() {
                   <p className="font-medium">iOS • Safari</p>
                   <p className="text-xs text-muted-foreground">IP: 10.0.0.2</p>
                 </div>
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => toast.success("Session revoked")}>Revoke</Button>
+                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => console.log("Session revoked")}>Revoke</Button>
               </div>
             </div>
           </div>

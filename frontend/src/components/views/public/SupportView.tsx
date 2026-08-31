@@ -103,7 +103,7 @@ export default function SupportView() {
     setSubmitting(true);
     try {
       await api.post("/api/support", { type, message: message.trim() });
-      toast.success("Support request submitted.", {
+      console.log("Support request submitted.", {
         description: "A member of your support team will be in touch privately.",
       });
       setMessage("");
