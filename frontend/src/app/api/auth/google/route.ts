@@ -21,7 +21,7 @@ function env() {
 function loginRedirect(request: NextRequest, error: string) {
   const url = new URL("/login", request.url);
   url.searchParams.set("oauth_error", error);
-  if (url.hostname === "0.0.0.0") url.hostname = "localhost";
+  if (url.hostname === "0.0.0.0") url.hostname = "127.0.0.1";
   return NextResponse.redirect(url);
 }
 
@@ -190,7 +190,7 @@ export async function callback(request: NextRequest) {
       : "/assessment";
 
   const destUrl = new URL(destination, request.url);
-  if (destUrl.hostname === "0.0.0.0") destUrl.hostname = "localhost";
+  if (destUrl.hostname === "0.0.0.0") destUrl.hostname = "127.0.0.1";
   const response = NextResponse.redirect(destUrl);
   response.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,

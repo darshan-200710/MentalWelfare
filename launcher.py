@@ -193,7 +193,7 @@ def main():
     wait_for_service("http://127.0.0.1:3000", "Frontend Portal (3000)", timeout=20)
 
     # 5. Open Web Browser
-    app_url = "http://localhost:3000"
+    app_url = "http://127.0.0.1:3000"
     print(f"\n======================================================================")
     print(f"  [+] PLATFORM ONLINE! Opening web portal in your browser...")
     print(f"  🔗 URL: {app_url}")

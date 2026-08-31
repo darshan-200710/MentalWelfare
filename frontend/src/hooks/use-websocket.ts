@@ -13,7 +13,7 @@ type WebSocketOptions = {
 
 export function useWebSocket(options: WebSocketOptions = {}) {
   const {
-    url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws",
+    url = process.env.NEXT_PUBLIC_WS_URL || "ws://127.0.0.1:8000/ws",
     autoConnect = true,
     reconnectAttempts = 5,
     reconnectInterval = 3000,
