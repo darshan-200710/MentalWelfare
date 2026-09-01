@@ -37,7 +37,19 @@ def _configure_ffmpeg():
                 logger.info(f"[ffmpeg] Resolved from _MEIPASS: {p}")
                 return
 
-    # 3. imageio_ffmpeg bundled binary (works in dev / pip environment)
+    # 3. Repository-bundled binary for local development
+    bundled_ffmpeg = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "ffmpeg.exe")
+    )
+    if os.path.isfile(bundled_ffmpeg):
+        ffmpeg_dir = os.path.dirname(bundled_ffmpeg)
+        if ffmpeg_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+        os.environ["FFMPEG_BINARY"] = bundled_ffmpeg
+        logger.info(f"[ffmpeg] Using repository binary: {bundled_ffmpeg}")
+        return
+
+    # 4. imageio_ffmpeg bundled binary (works in dev / pip environment)
     try:
         import imageio_ffmpeg
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()

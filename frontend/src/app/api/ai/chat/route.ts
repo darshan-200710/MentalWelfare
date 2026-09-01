@@ -32,12 +32,12 @@ async function _POST(req: NextRequest) {
   const conversationId = parsed.data.conversationId;
 
   // ── Fetch conversation + context data in parallel ──────────────────────────
-  const [convResult, latestAssessment, recentJournals] = await Promise.all([
+  const [convResult, latestAssessment, recentJournals, latestVoiceEntry] = await Promise.all([
     // Get or look up existing conversation (last 10 messages only — enough for context)
     conversationId
       ? db.aIConversation.findFirst({
           where: { id: conversationId, userId: user.id },
-          include: { messages: { orderBy: { createdAt: "asc" }, take: 10 } },
+          include: { messages: { orderBy: { createdAt: "desc" }, take: 10 } },
         })
       : Promise.resolve(null),
 
@@ -46,17 +46,30 @@ async function _POST(req: NextRequest) {
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       include: {
-        answers: { include: { question: true } },
+        session: { include: { answers: { orderBy: { createdAt: "asc" } } } },
       },
     }).catch(() => null),
 
     // Last 3 journal entries
     db.dailyJournal.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, status: "SUBMITTED" },
       orderBy: { createdAt: "desc" },
       take: 3,
-      select: { mood: true, status: true, createdAt: true },
+      select: {
+        mood: true, content: true, wellbeingLevel: true,
+        analysisJson: true, createdAt: true,
+      },
     }).catch(() => []),
+
+    // Most recent voice reflection, when available
+    db.voiceEntry.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        transcript: true, editedTranscript: true,
+        wellbeingLevel: true, createdAt: true,
+      },
+    }).catch(() => null),
   ]);
 
   // Create conversation if none exists
@@ -68,39 +81,70 @@ async function _POST(req: NextRequest) {
     });
   }
 
-  // ── Build rich system context string ─────────────────────────────────────
-  const lines: string[] = [
-    `User ID: ${user.id}`,
-    `Name: ${user.name ?? "Unknown"}`,
-  ];
-  if (user.rank) lines.push(`Rank: ${user.rank}`);
-  if (user.unit) lines.push(`Unit: ${user.unit}`);
-  if (user.serviceNumber) lines.push(`Service Number: ${user.serviceNumber}`);
-
-  if (latestAssessment) {
-    lines.push(`Latest Wellbeing Assessment Level: ${latestAssessment.level}`);
-    lines.push(`Assessment Score: ${latestAssessment.normalizedScore}/100`);
-    // Add individual domain scores
-    for (const answer of latestAssessment.answers) {
-      lines.push(`  - ${answer.question.text}: ${answer.value} (score ${answer.score})`);
+  const conversationMessages = [...conv.messages].sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
+  const compact = (value: string, maxLength = 320) =>
+    value.replace(/\s+/g, " ").trim().slice(0, maxLength);
+  const parseSignals = (value: string | null): string[] => {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value) as { signals?: unknown };
+      return Array.isArray(parsed.signals)
+        ? parsed.signals.filter((signal): signal is string => typeof signal === "string").slice(0, 5)
+        : [];
+    } catch {
+      return [];
     }
-  }
+  };
 
-  if (recentJournals.length > 0) {
-    const moodSummary = recentJournals
-      .map((j) => `${j.mood ?? "unknown"} (${new Date(j.createdAt).toLocaleDateString()})`)
-      .join(", ");
-    lines.push(`Recent journal moods: ${moodSummary}`);
-  }
+  // Structured, bounded context for personalization. Deliberately exclude email,
+  // database IDs, service number, raw scores, drafts, and full journal history.
+  const personalizationContext = {
+    context_version: 1,
+    profile: {
+      preferred_name: user.name?.trim().split(/\s+/)[0] || null,
+      rank: user.rank || null,
+      unit: user.unit || null,
+    },
+    latest_check_in: latestAssessment ? {
+      completed_at: latestAssessment.createdAt.toISOString(),
+      wellbeing_level: latestAssessment.wellbeingLevel,
+      signals: (() => {
+        try {
+          const parsed = JSON.parse(latestAssessment.signalsJson) as unknown;
+          return Array.isArray(parsed)
+            ? parsed.filter((signal): signal is string => typeof signal === "string").slice(0, 5)
+            : [];
+        } catch {
+          return [];
+        }
+      })(),
+      answers: latestAssessment.session.answers.slice(0, 8).map((answer) => ({
+        topic: answer.questionCode,
+        response: answer.value,
+      })),
+    } : null,
+    recent_journals: recentJournals.map((journal) => ({
+      recorded_at: journal.createdAt.toISOString(),
+      mood: journal.mood,
+      wellbeing_level: journal.wellbeingLevel,
+      signals: parseSignals(journal.analysisJson),
+      reflection_excerpt: compact(journal.content),
+    })),
+    latest_voice_reflection: latestVoiceEntry ? {
+      recorded_at: latestVoiceEntry.createdAt.toISOString(),
+      wellbeing_level: latestVoiceEntry.wellbeingLevel,
+      reflection_excerpt: compact(
+        latestVoiceEntry.editedTranscript || latestVoiceEntry.transcript,
+      ),
+    } : null,
+    conversation: {
+      turn_number: conversationMessages.length + 1,
+    },
+  };
 
-  const priorRiskFlags = conv.messages.filter((m) => m.riskFlag).length;
-  if (priorRiskFlags > 0) {
-    lines.push(`Note: ${priorRiskFlags} prior message(s) in this conversation flagged as high-risk.`);
-  }
-
-  lines.push(`Active conversation turn: ${conv.messages.length + 1}`);
-
-  const systemContext = lines.join("\n");
+  const systemContext = JSON.stringify(personalizationContext);
 
   // ── Persist user message ──────────────────────────────────────────────────
   const userMsg = await db.aIMessage.create({
@@ -108,7 +152,7 @@ async function _POST(req: NextRequest) {
   });
 
   // ── Build history (decrypt only what we have, bounded to 10) ─────────────
-  const history: ChatTurn[] = conv.messages
+  const history: ChatTurn[] = conversationMessages
     .filter((m) => m.role !== "system")
     .map((m) => ({ role: m.role as "user" | "assistant", content: decryptChatContent(m.content, user.id) }));
   history.push({ role: "user", content: message });

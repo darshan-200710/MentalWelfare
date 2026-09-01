@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Resolve the pipeline's working directory once at import time
 # This avoids the os.chdir() race condition in the ThreadPoolExecutor
 _PIPELINE_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..")
+    os.path.join(os.path.dirname(__file__), "..")
 )
 
 class PipelineWrapper:
@@ -89,22 +89,36 @@ class PipelineWrapper:
 
         trajectory = self.get_session_trajectory(session_id)
 
-        # Build enriched input: prepend system_context as a hidden preamble
-        enriched_text = ""
-        if system_context:
-            enriched_text += f"[System Context]\n{system_context}\n\n"
-            
-        for turn in history:
-            role = "User" if turn.get("role") == "user" else "AI Companion"
-            enriched_text += f"[{role}]\n{turn.get('content')}\n\n"
+        normalized_history = [
+            {"role": turn.get("role"), "content": turn.get("content", "").strip()}
+            for turn in history
+            if turn.get("role") in {"user", "assistant"}
+            and isinstance(turn.get("content"), str)
+            and turn.get("content", "").strip()
+        ]
+        latest_user_index = next(
+            (
+                index
+                for index in range(len(normalized_history) - 1, -1, -1)
+                if normalized_history[index]["role"] == "user"
+            ),
+            None,
+        )
+        if latest_user_index is None:
+            raise ValueError("Chat history must contain a user message")
 
+        latest_user_message = normalized_history[latest_user_index]["content"]
+        prior_history = normalized_history[:latest_user_index]
         loop = asyncio.get_event_loop()
 
         def _run():
-            # Use _PIPELINE_DIR resolved at import time — no os.chdir() race
-            # The pipeline was already warm-started from _PIPELINE_DIR
+            # Analyze only the latest user turn while preserving prior roles for generation.
             return self._pipeline_module.run_pipeline(
-                enriched_text, trajectory_trend=trajectory, print_logs=False
+                latest_user_message,
+                trajectory_trend=trajectory,
+                print_logs=False,
+                conversation_history=prior_history,
+                system_context=system_context,
             )
 
         try:
